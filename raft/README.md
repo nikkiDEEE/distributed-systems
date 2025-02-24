@@ -1,18 +1,18 @@
-# Project 4: Raft
+# Raft Consensus Protocol in Go
 
 ## Introduction
 
-This is an implementation of Raft, a replicated state machine protocol, which will be meant to use as a module. A replicated service achieves fault tolerance by storing complete copies of its state (i.e., data) on multiple replica servers. Replication allows the service to continue operating even if some of its servers experience failures (crashes or a broken or flaky network). The challenge is that failures may cause the replicas to hold differing copies of the data.
+This repository contains an implementation of the Raft consensus protocol in Go, designed to function as a module within a larger distributed system. Raft is a replicated state machine protocol that ensures fault tolerance by maintaining multiple replicas of a service’s state across different servers. This replication enables the service to remain operational even when some servers fail due to crashes or network issues. However, failures can lead to inconsistencies among replicas, which Raft is designed to resolve.
 
-Raft organizes client requests into a sequence, called the log, and ensures that all the replica servers see the same log. Each replica executes client requests in log order, applying them to its local copy of the service's state. Since all the live replicas see the same log contents, they all execute the same requests in the same order, and thus continue to have identical service state. If a server fails but later recovers, Raft takes care of bringing its log up to date. Raft will continue to operate as long as at least a majority of the servers are alive and can talk to each other. If there is no such majority, Raft will make no progress, but will pick up where it left off as soon as a majority can communicate again.
+Raft structures client requests into an ordered sequence called the log and guarantees that all replica servers observe the same log. Each replica processes requests sequentially, applying them to its local state. Since all live replicas maintain an identical log and execute the same requests in the same order, they retain a consistent service state. If a server fails and later recovers, Raft ensures its log is updated to match the latest committed state. The protocol continues functioning as long as a majority of the servers are operational and able to communicate. If no such majority exists, Raft pauses progress but resumes from its last state as soon as communication is restored.
 
-This implementation of Raft is meant to be used as a module in a larger service. A set of Raft instances talk to each other with RPC to maintain replicated logs. This Raft interface will support an indefinite sequence of numbered commands, also called log entries. The entries are numbered with index numbers. The log entry with a given index will eventually be committed. At that point, Raft sends the log entry to the larger service for it to execute.
+This implementation enables multiple Raft instances to communicate via RPC to maintain replicated logs. The Raft module supports an indefinite sequence of numbered log entries, which are committed and then forwarded to the larger service for execution. Each entry is indexed, and once committed, Raft ensures its execution by the system.
 
-This design is based off [extended Raft paper](https://cs-people.bu.edu/liagos/651-2022/papers/raft-extended.pdf), with particular attention to Figure 2. This implementation includes everthing except cluster membership changes (Section 6) and log snapshotting.
+This implementation is based on the extended Raft paper, with a focus on Figure 2. It includes all core Raft functionalities except for cluster membership changes (Section 6) and log snapshotting.
 
 ## Run the code
 
-### Part 4A: Leader Election
+### Part A: Leader Election
 
 In this part the goal is for a single leader is elected, for the leader to remain the leader if there are no failures, and for a new leader to take over if the old leader fails or if packets to/from the old leader are lost. Run `go test -run 4A -race` to test the 4A code.
 
@@ -26,7 +26,7 @@ PASS
 ok      raft    10.187s
 ```
 
-### Part 4B: Log Replication and Persistence
+### Part B: Log Replication and Persistence
 
 If a Raft-based server reboots it should resume service where it left off. This requires that Raft keep persistent state that survives a reboot. The paper's Figure 2 mentions which state should be persistent. A real implementation would write Raft's persistent state to disk each time it changed, and would read the state from disk when restarting after a reboot. This implementation won't use the disk; instead, it will save and restore persistent state from a `Persister` object (see `persister.go`). You can check how much real time and CPU time this uses with the `time` command. Here's typical output:
 
